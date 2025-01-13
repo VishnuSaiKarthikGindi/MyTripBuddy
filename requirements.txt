@@ -1,0 +1,12 @@
+langchain_community
+langchain_core
+tiktoken 
+langchain-groq 
+langchainhub 
+langchain 
+langgraph 
+langchain_huggingface
+pinecone-client 
+googlemaps 
+langchain_pinecone
+pydantic
