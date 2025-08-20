@@ -1,8 +1,9 @@
 import requests
 import os
+from typing import Optional, Dict, Any
 
 class TripAdvisorAPI:
-    def __init__(self, api_key, base_url="https://api.content.tripadvisor.com/api/v1"):
+    def __init__(self, api_key: str, base_url: str = "https://api.content.tripadvisor.com/api/v1"):
         """
         Initialize the API client.
 
@@ -12,7 +13,7 @@ class TripAdvisorAPI:
         self.api_key = api_key
         self.base_url = base_url
 
-    def _make_request(self, endpoint, params):
+    def _make_request(self, endpoint: str, params: Dict[str, Any]):
         """
         Helper method to make API requests.
 
@@ -22,14 +23,15 @@ class TripAdvisorAPI:
         """
         headers = {"Accept": "application/json"}
         try:
-            response = requests.get(f"{self.base_url}/{endpoint}", headers=headers, params=params)
+            cleaned_params = {k: v for k, v in params.items() if v is not None}
+            response = requests.get(f"{self.base_url}/{endpoint}", headers=headers, params=cleaned_params)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
             print(f"API Request failed: {e}")
             return None
 
-    def search_location(self, search_query, category=None, phone=None, address=None, lat_long=None, radius=None, radius_unit=None, language="en"):
+    def search_location(self, search_query: str, category: Optional[str] = None, phone: Optional[str] = None, address: Optional[str] = None, lat_long: Optional[str] = None, radius: Optional[int] = None, radius_unit: Optional[str] = None, language: str = "en"):
         """
         Search for a location by name, category, phone, or coordinates.
 
@@ -57,7 +59,7 @@ class TripAdvisorAPI:
         }
         return self._make_request(endpoint, params)
 
-    def get_location_details(self, location_id, language="en", currency="USD"):
+    def get_location_details(self, location_id: str, language: str = "en", currency: str = "USD"):
         """
         Get detailed information about a specific location.
 
@@ -74,7 +76,7 @@ class TripAdvisorAPI:
         }
         return self._make_request(endpoint, params)
 
-    def nearby_search(self, lat_long, category=None, radius=None, radius_unit="km", language="en"):
+    def nearby_search(self, lat_long: str, category: Optional[str] = None, radius: Optional[int] = None, radius_unit: str = "km", language: str = "en"):
         """
         Search for nearby locations based on latitude/longitude.
 
@@ -99,7 +101,10 @@ class TripAdvisorAPI:
 # Example usage
 if __name__ == "__main__":
     API_KEY = os.getenv("TRIPADVISOR_API_KEY")
-    print(API_KEY)
+    if API_KEY:
+        print("TripAdvisor API key detected in environment.")
+    else:
+        print("Warning: TRIPADVISOR_API_KEY not set.")
     trip_api = TripAdvisorAPI(API_KEY)
 
     # Example 1: Search for a location
