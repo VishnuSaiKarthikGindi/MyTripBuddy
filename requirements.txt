@@ -17,3 +17,4 @@ python-dotenv
 openai
 langchain-openai
 amadeus
+bs4
