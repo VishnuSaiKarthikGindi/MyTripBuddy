@@ -2,7 +2,10 @@ from typing import Dict, Any, Type
 from pydantic import BaseModel, Field
 from langchain.tools import BaseTool
 import ast
-import regex as re
+import os
+import re
+from trip_api import TripAdvisorAPI
+import json
 
 # Define Pydantic schema for tool arguments
 class SearchAccommodationAndAttractionsArgs(BaseModel):
@@ -18,7 +21,7 @@ class SearchAccommodationAndAttractions(BaseTool):
     )
 
     args_schema: Type[BaseModel] = SearchAccommodationAndAttractionsArgs
-    api_client: TripAdvisorAPI  # Declare API client as a field
+    api_client: TripAdvisorAPI
 
     def _run(self, query: str) -> Dict[str, Any]:
       def parse_user_query(query: str) -> Dict[str, Any]:
@@ -56,10 +59,14 @@ class SearchAccommodationAndAttractions(BaseTool):
               match = re.search(pattern, query, re.IGNORECASE)
               if match:
                   parsed_query.update(match.groupdict())
-                  if key in ["best_things_to_do", "cultural_landmarks", "outdoor_activities"]:
+                  if key in ["best_things_to_do", "cultural_landmarks", "outdoor_activities", "top_attractions", "must_visit", "hidden_gems", "best_time_to_visit", "crowded_times", "best_season"]:
                       parsed_query["category"] = "attractions"
                   elif key == "budget_friendly":
-                      parsed_query["category"] = "budget"
+                      parsed_query["category"] = "attractions"
+                  if "location" in parsed_query and not parsed_query.get("searchQuery"):
+                      parsed_query["searchQuery"] = parsed_query["location"]
+                  if "attraction" in parsed_query and not parsed_query.get("searchQuery"):
+                      parsed_query["searchQuery"] = parsed_query["attraction"]
                   return parsed_query
 
           tokens = query.lower().split()
@@ -87,9 +94,13 @@ class SearchAccommodationAndAttractions(BaseTool):
               except (ValueError, IndexError):
                   pass
 
+          if not parsed_query.get("searchQuery"):
+              parsed_query["searchQuery"] = query
           return parsed_query
 
       query_params = parse_user_query(query)
+      if not self.api_client:
+          return {"error": "TripAdvisor API client not configured."}
       if "latLong" in query_params:
           results = self.api_client.nearby_search(
               lat_long=query_params.get("latLong"),
@@ -106,7 +117,7 @@ class SearchAccommodationAndAttractions(BaseTool):
                 radius_unit=query_params.get("radiusUnit"),
                 language=query_params.get("language"),
           )
-      return results
+      return results or {"error": "No results or API error."}
 
     def _arun(self, query: str) -> Dict[str, Any]:
         raise NotImplementedError("This tool does not support async")
